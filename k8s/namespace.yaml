@@ -1,0 +1,44 @@
+# Enterprise SQL Proxy System - Kubernetes Namespace
+# Created: 2025-05-30 05:51:51 UTC by Teeksss
+# Version: 2.0.0 Final
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enterprise-sql-proxy
+  labels:
+    name: enterprise-sql-proxy
+    app: enterprise-sql-proxy
+    version: "2.0.0"
+    environment: production
+    creator: teeksss
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: esp-config
+  namespace: enterprise-sql-proxy
+data:
+  APP_NAME: "Enterprise SQL Proxy System"
+  APP_VERSION: "2.0.0"
+  ENVIRONMENT: "production"
+  CREATOR: "Teeksss"
+  BUILD_DATE: "2025-05-30 05:51:51"
+  LOG_LEVEL: "INFO"
+  PROMETHEUS_ENABLED: "true"
+  MONITORING_ENABLED: "true"
+  AUDIT_LOG_ENABLED: "true"
+  RATE_LIMIT_ENABLED: "true"
+  CACHE_ENABLED: "true"
+  NOTIFICATIONS_ENABLED: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: esp-secrets
+  namespace: enterprise-sql-proxy
+type: Opaque
+data:
+  SECRET_KEY: eW91ci1zdXBlci1zZWNyZXQta2V5LWNoYW5nZS10aGlzLWluLXByb2R1Y3Rpb24=
+  POSTGRES_PASSWORD: cG9zdGdyZXM=
+  REDIS_PASSWORD: cmVkaXM=

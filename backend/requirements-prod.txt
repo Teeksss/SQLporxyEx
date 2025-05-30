@@ -1,0 +1,24 @@
+# Production-specific requirements
+gunicorn==21.2.0
+gevent==23.7.0
+uvicorn[standard]==0.23.2
+
+# Security enhancements
+cryptography==41.0.4
+bcrypt==4.0.1
+
+# Monitoring and logging
+prometheus-client==0.17.1
+structlog==23.1.0
+sentry-sdk[fastapi]==1.32.0
+
+# Performance
+redis[hiredis]==4.6.0
+aioredis==2.0.1
+
+# Database optimizations
+asyncpg==0.28.0
+psycopg2-binary==2.9.7
+
+# Health checks
+python-multipart==0.0.6

@@ -1,0 +1,262 @@
+# Enterprise SQL Proxy System - Helm Values
+# Created: 2025-05-30 05:59:34 UTC by Teeksss
+# Version: 2.0.0 Final
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+# Application metadata
+app:
+  name: enterprise-sql-proxy
+  version: "2.0.0"
+  creator: "Teeksss"
+  buildDate: "2025-05-30 05:59:34 UTC"
+
+# Backend configuration
+backend:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: teeksss/enterprise-sql-proxy-backend
+    tag: "2.0.0"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  
+  replicaCount: 3
+  
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+  
+  environment:
+    ENVIRONMENT: "production"
+    LOG_LEVEL: "INFO"
+    PROMETHEUS_ENABLED: "true"
+    MONITORING_ENABLED: "true"
+    AUDIT_LOG_ENABLED: "true"
+    RATE_LIMIT_ENABLED: "true"
+    CACHE_ENABLED: "true"
+    NOTIFICATIONS_ENABLED: "true"
+  
+  secrets:
+    secretKey: ""
+    postgresPassword: ""
+    redisPassword: ""
+  
+  persistence:
+    logs:
+      enabled: true
+      size: 5Gi
+      storageClass: ""
+    uploads:
+      enabled: true
+      size: 10Gi
+      storageClass: ""
+    backups:
+      enabled: true
+      size: 50Gi
+      storageClass: ""
+
+# Frontend configuration
+frontend:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: teeksss/enterprise-sql-proxy-frontend
+    tag: "2.0.0"
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  
+  replicaCount: 2
+  
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 80
+    httpsPort: 443
+    targetHttpsPort: 443
+  
+  ssl:
+    enabled: true
+    certificateSecretName: "esp-tls"
+
+# PostgreSQL configuration
+postgresql:
+  enabled: true
+  auth:
+    database: "enterprise_sql_proxy"
+    username: "postgres"
+    password: ""
+    existingSecret: ""
+  
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: ""
+    
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+  
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# Redis configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: ""
+    existingSecret: ""
+  
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: ""
+    
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "250m"
+  
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/rate-limit-rps: "100"
+  
+  hosts:
+    - host: esp.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+        - path: /api
+          pathType: Prefix
+          service: backend
+        - path: /ws
+          pathType: Prefix
+          service: backend
+  
+  tls:
+    - secretName: esp-tls
+      hosts:
+        - esp.yourdomain.com
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+      path: /metrics
+    
+    rules:
+      enabled: true
+  
+  grafana:
+    enabled: true
+    admin:
+      user: admin
+      password: ""
+    
+    dashboards:
+      enabled: true
+    
+    datasources:
+      enabled: true
+
+# Security configuration
+security:
+  networkPolicies:
+    enabled: true
+  
+  podSecurityPolicies:
+    enabled: true
+  
+  rbac:
+    create: true
+  
+  serviceAccount:
+    create: true
+    name: ""
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention: "30d"
+  
+  storage:
+    type: "s3"
+    bucket: ""
+    region: ""
+    accessKey: ""
+    secretKey: ""
+
+# Node selector and tolerations
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Service monitor for Prometheus
+serviceMonitor:
+  enabled: true
+  namespace: ""
+  interval: 30s
+  scrapeTimeout: 10s

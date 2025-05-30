@@ -1,0 +1,95 @@
+{
+  "short_name": "ESP v2.0.0",
+  "name": "Enterprise SQL Proxy System v2.0.0 - Created by Teeksss",
+  "description": "The Ultimate Enterprise-Grade SQL Query Execution Platform",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1890ff",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "screenshots": [
+    {
+      "src": "screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "screenshot-narrow.png", 
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "SQL Query",
+      "short_name": "Query",
+      "description": "Execute SQL queries",
+      "url": "/query",
+      "icons": [
+        {
+          "src": "icons/query-icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View analytics dashboard", 
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "icons/dashboard-icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Query History",
+      "short_name": "History",
+      "description": "View query history",
+      "url": "/query/history",
+      "icons": [
+        {
+          "src": "icons/history-icon.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "web",
+      "url": "https://esp.yourdomain.com/"
+    }
+  ],
+  "prefer_related_applications": false,
+  "version": "2.0.0",
+  "author": "Teeksss",
+  "build_date": "2025-05-30 06:38:34 UTC",
+  "repository": "https://github.com/teeksss/enterprise-sql-proxy",
+  "license": "MIT"
+}

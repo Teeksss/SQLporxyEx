@@ -1,0 +1,255 @@
+# Prometheus Alert Rules for Enterprise SQL Proxy
+# Created: 2025-05-29 12:29:34 UTC by Teeksss
+# Version: 2.0.0
+
+groups:
+  - name: sql_proxy_alerts
+    rules:
+      # Application Alerts
+      - alert: SQLProxyBackendDown
+        expr: up{job="sql-proxy-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "SQL Proxy Backend is down"
+          description: "SQL Proxy Backend has been down for more than 1 minute"
+
+      - alert: SQLProxyHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="sql-proxy-backend"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s"
+
+      - alert: SQLProxyHighErrorRate
+        expr: rate(http_requests_total{job="sql-proxy-backend",status=~"5.."}[5m]) / rate(http_requests_total{job="sql-proxy-backend"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+
+      - alert: SQLProxyHighQueryFailureRate
+        expr: rate(sql_proxy_queries_failed_total[5m]) / rate(sql_proxy_queries_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High query failure rate"
+          description: "Query failure rate is {{ $value | humanizePercentage }}"
+
+      # Database Alerts
+      - alert: PostgreSQLDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database has been down for more than 1 minute"
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "PostgreSQL high connection usage"
+          description: "PostgreSQL is using {{ $value | humanizePercentage }} of available connections"
+
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_database_tup_returned[5m]) / rate(pg_stat_database_tup_fetched[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "PostgreSQL slow queries detected"
+          description: "Query efficiency is {{ $value | humanizePercentage }}"
+
+      # Redis Alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been down for more than 1 minute"
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      # System Resource Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+
+      - alert: DiskWillFillIn24Hours
+        expr: predict_linear(node_filesystem_avail_bytes[6h], 24*3600) < 0
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Disk will fill in 24 hours"
+          description: "Disk {{ $labels.mountpoint }} on {{ $labels.instance }} will fill in 24 hours"
+
+      # Container Alerts
+      - alert: ContainerDown
+        expr: up{job="cadvisor"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: monitoring
+        annotations:
+          summary: "Container monitoring down"
+          description: "cAdvisor container monitoring has been down for more than 1 minute"
+
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total{name!=""}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Container high CPU usage"
+          description: "Container {{ $labels.name }} CPU usage is {{ $value }}"
+
+      - alert: ContainerHighMemory
+        expr: container_memory_usage_bytes{name!=""} / container_spec_memory_limit_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Container high memory usage"
+          description: "Container {{ $labels.name }} memory usage is {{ $value | humanizePercentage }}"
+
+      # Security Alerts
+      - alert: HighFailedLogins
+        expr: rate(sql_proxy_failed_logins_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High failed login rate"
+          description: "Failed login rate is {{ $value }} per second"
+
+      - alert: SuspiciousActivity
+        expr: rate(sql_proxy_security_events_total{severity="high"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Suspicious security activity detected"
+          description: "High severity security events detected at {{ $value }} per second"
+
+      - alert: UnauthorizedAccess
+        expr: rate(http_requests_total{status="401"}[5m]) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High unauthorized access attempts"
+          description: "Unauthorized access rate is {{ $value }} per second"
+
+      # Business Logic Alerts
+      - alert: QueryApprovalBacklog
+        expr: sql_proxy_pending_approvals > 50
+        for: 10m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "High query approval backlog"
+          description: "{{ $value }} queries waiting for approval"
+
+      - alert: NoQueries
+        expr: rate(sql_proxy_queries_total[1h]) == 0
+        for: 2h
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "No queries executed"
+          description: "No queries have been executed in the last 2 hours"
+
+      # External Dependencies
+      - alert: ExternalServiceDown
+        expr: probe_success{job="blackbox"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: external
+        annotations:
+          summary: "External service unreachable"
+          description: "{{ $labels.instance }} has been unreachable for more than 2 minutes"
+
+      # Backup Alerts
+      - alert: BackupFailed
+        expr: time() - sql_proxy_last_successful_backup > 86400 * 2
+        for: 1m
+        labels:
+          severity: critical
+          service: backup
+        annotations:
+          summary: "Backup failure"
+          description: "No successful backup in the last 2 days"
+
+      - alert: BackupAging
+        expr: time() - sql_proxy_last_successful_backup > 86400
+        for: 1m
+        labels:
+          severity: warning
+          service: backup
+        annotations:
+          summary: "Backup aging"
+          description: "Last successful backup was {{ $value | humanizeDuration }} ago"

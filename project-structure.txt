@@ -1,0 +1,86 @@
+sql-proxy-system/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py
+│   │   │   ├── proxy.py
+│   │   │   ├── admin.py
+│   │   │   ├── config.py
+│   │   │   ├── setup.py
+│   │   │   ├── discovery.py
+│   │   │   └── health.py
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── config.py
+│   │   │   ├── security.py
+│   │   │   └── database.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py
+│   │   │   ├── query.py
+│   │   │   ├── audit.py
+│   │   │   ├── rate_limit.py
+│   │   │   ├── config.py
+│   │   │   ├── server.py
+│   │   │   └── notification.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── ldap_service.py
+│   │   │   ├── query_service.py
+│   │   │   ├── rate_limit_service.py
+│   │   │   ├── audit_service.py
+│   │   │   ├── config_service.py
+│   │   │   ├── setup_service.py
+│   │   │   ├── discovery_service.py
+│   │   │   ├── health_service.py
+│   │   │   ├── backup_service.py
+│   │   │   └── notification_service.py
+│   │   └── utils/
+│   │       ├── __init__.py
+│   │       ├── sql_parser.py
+│   │       └── validators.py
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── alembic/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── QueryApproval.tsx
+│   │   │   ├── QueryExecutor.tsx
+│   │   │   ├── UserManagement.tsx
+│   │   │   ├── RateLimit.tsx
+│   │   │   ├── AuditLogs.tsx
+│   │   │   ├── Sidebar.tsx
+│   │   │   ├── SetupWizard.tsx
+│   │   │   ├── SystemConfig.tsx
+│   │   │   ├── ServerConfig.tsx
+│   │   │   ├── LDAPConfig.tsx
+│   │   │   ├── SecurityConfig.tsx
+│   │   │   ├── BackupConfig.tsx
+│   │   │   ├── NotificationConfig.tsx
+│   │   │   ├── HealthMonitor.tsx
+│   │   │   ├── ConfigImportExport.tsx
+│   │   │   └── AutoDiscovery.tsx
+│   │   ├── services/
+│   │   │   └── api.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   ├── hooks/
+│   │   │   └── useAuth.ts
+│   │   ├── utils/
+│   │   │   └── constants.ts
+│   │   └── App.tsx
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── Dockerfile
+├── config/
+│   ├── servers.yaml
+│   ├── roles.yaml
+│   └── rate_limits.yaml
+├── docker-compose.yml
+├── .env.example
+└── README.md

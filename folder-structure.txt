@@ -1,0 +1,69 @@
+sql-proxy-system/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py
+│   │   │   ├── query.py
+│   │   │   └── whitelist.py
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   ├── user.py
+│   │   │   ├── query.py
+│   │   │   └── auth.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── ldap_auth.py
+│   │   │   ├── query_validator.py
+│   │   │   ├── rate_limiter.py
+│   │   │   └── sql_proxy.py
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth.py
+│   │   │   ├── queries.py
+│   │   │   ├── admin.py
+│   │   │   └── proxy.py
+│   │   └── middleware/
+│   │       ├── __init__.py
+│   │       ├── auth_middleware.py
+│   │       └── rate_limit_middleware.py
+│   ├── requirements.txt
+│   ├── Dockerfile
+│   └── alembic/
+│       ├── env.py
+│       ├── script.py.mako
+│       └── versions/
+├── frontend/
+│   ├── package.json
+│   ├── public/
+│   │   └── index.html
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── auth/
+│   │   │   │   ├── Login.js
+│   │   │   │   └── ProtectedRoute.js
+│   │   │   ├── admin/
+│   │   │   │   ├── Dashboard.js
+│   │   │   │   ├── QueryWhitelist.js
+│   │   │   │   ├── UserManagement.js
+│   │   │   │   └── RateLimitConfig.js
+│   │   │   └── common/
+│   │   │       ├── Header.js
+│   │   │       └── Sidebar.js
+│   │   ├── services/
+│   │   │   ├── api.js
+│   │   │   └── auth.js
+│   │   ├── utils/
+│   │   │   └── constants.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   │   └── App.css
+│   ├── Dockerfile
+│   └── .gitignore
+├── docker-compose.yml
+├── .env.example
+└── README.md

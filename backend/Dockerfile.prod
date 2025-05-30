@@ -1,0 +1,76 @@
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        curl \
+        gcc \
+        libc6-dev \
+        libpq-dev \
+        libssl-dev \
+        pkg-config \
+        unixodbc-dev \
+        gnupg2 \
+        apt-transport-https \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Microsoft ODBC Driver for SQL Server
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y msodbcsql18 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r sqlproxy && useradd -r -g sqlproxy sqlproxy
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+COPY requirements-prod.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements-prod.txt \
+    && pip install --no-cache-dir gunicorn[gevent]==21.2.0
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/backups /app/logs /app/ssl \
+    && chown -R sqlproxy:sqlproxy /app
+
+# Switch to non-root user
+USER sqlproxy
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/api/health/ || exit 1
+
+# Production startup command
+CMD ["gunicorn", "app.main:app", \
+     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--workers", "4", \
+     "--worker-connections", "1000", \
+     "--max-requests", "1000", \
+     "--max-requests-jitter", "100", \
+     "--timeout", "120", \
+     "--keep-alive", "5", \
+     "--bind", "0.0.0.0:8000", \
+     "--access-logfile", "/app/logs/access.log", \
+     "--error-logfile", "/app/logs/error.log", \
+     "--log-level", "info", \
+     "--preload"]

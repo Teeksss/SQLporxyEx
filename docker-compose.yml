@@ -1,0 +1,228 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: sql-proxy-postgres
+    environment:
+      POSTGRES_DB: sql_proxy
+      POSTGRES_USER: sql_proxy_user
+      POSTGRES_PASSWORD: sql_proxy_pass_2024
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - sql-proxy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sql_proxy_user -d sql_proxy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sql-proxy-redis
+    command: redis-server --appendonly yes --requirepass redis_pass_2024
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - sql-proxy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend FastAPI Application
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sql-proxy-backend
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://sql_proxy_user:sql_proxy_pass_2024@postgres:5432/sql_proxy
+      
+      # Redis Configuration
+      REDIS_URL: redis://:redis_pass_2024@redis:6379/0
+      
+      # Security Configuration
+      SECRET_KEY: your-super-secret-key-change-in-production-2024
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 480
+      
+      # Application Configuration
+      APP_NAME: "Enterprise SQL Proxy System"
+      APP_VERSION: "2.0.0"
+      DEBUG: "false"
+      API_PREFIX: "/api"
+      
+      # CORS Configuration
+      ALLOWED_ORIGINS: "http://localhost:3000,http://frontend:3000"
+      
+      # File Storage
+      UPLOAD_DIR: "/app/uploads"
+      BACKUP_DIR: "/app/backups"
+      LOG_DIR: "/app/logs"
+      
+      # Email Configuration (Optional)
+      SMTP_SERVER: ""
+      SMTP_PORT: "587"
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_USE_TLS: "true"
+      
+      # Rate Limiting
+      RATE_LIMIT_ENABLED: "true"
+      DEFAULT_RATE_LIMIT: "100"
+      
+      # Monitoring
+      HEALTH_CHECK_INTERVAL: "60"
+      METRICS_ENABLED: "true"
+      
+      # Development
+      RELOAD: "false"
+    volumes:
+      - ./backend:/app
+      - backend_uploads:/app/uploads
+      - backend_backups:/app/backups
+      - backend_logs:/app/logs
+    ports:
+      - "8000:8000"
+    networks:
+      - sql-proxy-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend React Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sql-proxy-frontend
+    environment:
+      REACT_APP_API_URL: "http://localhost:8000/api"
+      REACT_APP_APP_NAME: "Enterprise SQL Proxy"
+      REACT_APP_VERSION: "2.0.0"
+      GENERATE_SOURCEMAP: "false"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    networks:
+      - sql-proxy-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: sql-proxy-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - sql-proxy-network
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Monitoring with Prometheus (Optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: sql-proxy-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - sql-proxy-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana Dashboard (Optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: sql-proxy-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin_pass_2024
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana-provisioning:/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+    networks:
+      - sql-proxy-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  backend_backups:
+    driver: local
+  backend_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  sql-proxy-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

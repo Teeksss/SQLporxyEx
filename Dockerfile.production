@@ -1,0 +1,129 @@
+# Enterprise SQL Proxy System - Production Dockerfile
+# Created: 2025-05-29 14:38:00 UTC by Teeksss
+# Multi-stage build for production optimization
+
+# =============================================================================
+# Stage 1: Build Dependencies
+# =============================================================================
+FROM python:3.11-slim as builder
+
+# Build arguments
+ARG BUILD_DATE
+ARG VERSION=2.0.0
+ARG CREATOR=Teeksss
+
+# Set build labels
+LABEL maintainer="Teeksss" \
+      version="${VERSION}" \
+      build-date="${BUILD_DATE}" \
+      description="Enterprise SQL Proxy System - Production Build" \
+      org.opencontainers.image.title="Enterprise SQL Proxy System" \
+      org.opencontainers.image.description="A secure, scalable SQL query execution platform" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.authors="${CREATOR}"
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    libffi-dev \
+    libssl-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create application directory
+WORKDIR /app
+
+# Copy requirements
+COPY requirements.txt requirements-prod.txt ./
+
+# Install Python dependencies
+RUN pip install --upgrade pip \
+    && pip install -r requirements-prod.txt \
+    && pip install gunicorn[gevent] \
+    && pip install psycopg2-binary \
+    && rm -rf ~/.cache/pip
+
+# =============================================================================
+# Stage 2: Production Runtime
+# =============================================================================
+FROM python:3.11-slim as production
+
+# Build arguments
+ARG BUILD_DATE
+ARG VERSION=2.0.0
+ARG CREATOR=Teeksss
+
+# Set runtime labels
+LABEL maintainer="Teeksss" \
+      version="${VERSION}" \
+      build-date="${BUILD_DATE}" \
+      description="Enterprise SQL Proxy System - Production Runtime"
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/app/.venv/bin:$PATH" \
+    ENVIRONMENT=production \
+    WORKERS=4 \
+    WORKER_CLASS=gevent \
+    WORKER_CONNECTIONS=1000 \
+    MAX_REQUESTS=1000 \
+    MAX_REQUESTS_JITTER=100 \
+    TIMEOUT=30 \
+    KEEPALIVE=2
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    tini \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -g 1000 appuser \
+    && useradd -u 1000 -g appuser -m -s /bin/bash appuser
+
+# Copy Python dependencies from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Create application directories
+RUN mkdir -p /app/logs /app/uploads /app/backups \
+    && chown -R appuser:appuser /app
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY --chown=appuser:appuser . .
+
+# Copy production configuration
+COPY --chown=appuser:appuser config/gunicorn.conf.py .
+COPY --chown=appuser:appuser scripts/entrypoint.sh .
+COPY --chown=appuser:appuser scripts/healthcheck.sh .
+
+# Make scripts executable
+RUN chmod +x entrypoint.sh healthcheck.sh
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD ./healthcheck.sh
+
+# Use tini as init system
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Start application
+CMD ["./entrypoint.sh"]

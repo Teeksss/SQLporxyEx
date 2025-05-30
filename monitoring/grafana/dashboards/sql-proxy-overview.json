@@ -1,0 +1,141 @@
+{
+  "id": null,
+  "title": "SQL Proxy - System Overview",
+  "tags": ["sql-proxy", "overview"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "System Health",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "up{job=\"sql-proxy-backend\"}",
+          "legendFormat": "Backend"
+        },
+        {
+          "expr": "up{job=\"postgresql\"}",
+          "legendFormat": "Database"
+        },
+        {
+          "expr": "up{job=\"redis\"}",
+          "legendFormat": "Cache"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "0": {"text": "DOWN", "color": "red"},
+                "1": {"text": "UP", "color": "green"}
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "green", "value": 1}
+            ]
+          }
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "id": 2,
+      "title": "Request Rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{job=\"sql-proxy-backend\"}[5m])",
+          "legendFormat": "{{method}} {{status}}"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Requests/sec",
+          "min": 0
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "id": 3,
+      "title": "Response Time",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"sql-proxy-backend\"}[5m]))",
+          "legendFormat": "50th percentile"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"sql-proxy-backend\"}[5m]))",
+          "legendFormat": "95th percentile"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"sql-proxy-backend\"}[5m]))",
+          "legendFormat": "99th percentile"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Seconds",
+          "min": 0
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+    },
+    {
+      "id": 4,
+      "title": "Query Statistics",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "rate(sql_proxy_queries_total[5m])",
+          "legendFormat": "Queries/sec"
+        },
+        {
+          "expr": "rate(sql_proxy_queries_failed_total[5m])",
+          "legendFormat": "Failures/sec"
+        },
+        {
+          "expr": "sql_proxy_pending_approvals",
+          "legendFormat": "Pending Approvals"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+    },
+    {
+      "id": 5,
+      "title": "System Resources",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "CPU Usage %"
+        },
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "Memory Usage %"
+        }
+      ],
+      "yAxes": [
+        {
+          "label": "Percentage",
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+    }
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "schemaVersion": 27,
+  "version": 1
+}

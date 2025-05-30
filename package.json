@@ -1,0 +1,156 @@
+{
+  "name": "enterprise-sql-proxy-system",
+  "version": "2.0.0",
+  "description": "A secure, scalable SQL query execution platform with enterprise-grade features",
+  "author": "Teeksss <teeksss@enterprise-sql-proxy.com>",
+  "license": "Enterprise",
+  "homepage": "https://github.com/enterprise/sql-proxy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/enterprise/sql-proxy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/enterprise/sql-proxy/issues",
+    "email": "support@enterprise-sql-proxy.com"
+  },
+  "keywords": [
+    "sql",
+    "proxy",
+    "database",
+    "enterprise",
+    "security",
+    "query-execution",
+    "audit",
+    "compliance",
+    "fastapi",
+    "react",
+    "postgresql",
+    "redis"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0",
+    "python": ">=3.11.0"
+  },
+  "scripts": {
+    "start": "docker-compose up -d",
+    "start:prod": "docker-compose -f docker-compose.prod.yml up -d",
+    "stop": "docker-compose down",
+    "stop:prod": "docker-compose -f docker-compose.prod.yml down",
+    "restart": "docker-compose restart",
+    "restart:prod": "docker-compose -f docker-compose.prod.yml restart",
+    "build": "docker-compose build",
+    "build:prod": "docker-compose -f docker-compose.prod.yml build",
+    "logs": "docker-compose logs -f",
+    "logs:prod": "docker-compose -f docker-compose.prod.yml logs -f",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "install:all": "npm run install:frontend && npm run install:backend",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && pip install -r requirements.txt",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && pytest",
+    "test:integration": "./scripts/test-integration.sh",
+    "test:e2e": "./scripts/test-e2e.sh",
+    "test:performance": "./scripts/performance-test.sh",
+    "test:security": "./scripts/security-scan.sh",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && flake8 app/",
+    "format": "npm run format:frontend && npm run format:backend",
+    "format:frontend": "cd frontend && npm run format",
+    "format:backend": "cd backend && black app/ && isort app/",
+    "typecheck": "cd frontend && npm run typecheck",
+    "validate": "./scripts/validate-system.sh",
+    "setup": "./scripts/setup.sh",
+    "deploy": "./scripts/deploy.sh",
+    "backup": "./scripts/backup.sh",
+    "restore": "./scripts/restore.sh",
+    "migrate": "cd backend && alembic upgrade head",
+    "migrate:create": "cd backend && alembic revision --autogenerate -m",
+    "docs:build": "cd frontend && npm run docs && cd ../backend && sphinx-build -b html docs/ docs/_build/",
+    "docs:serve": "cd docs && python -m http.server 8080",
+    "ssl:generate": "./scripts/generate-ssl.sh",
+    "ssl:renew": "./scripts/renew-ssl.sh",
+    "monitor": "docker-compose exec grafana curl -f http://localhost:3000/api/health",
+    "health": "curl -f http://localhost/health && curl -f http://localhost:8000/health",
+    "clean": "docker system prune -f && docker volume prune -f",
+    "clean:all": "docker-compose down -v --remove-orphans && docker system prune -af --volumes",
+    "update": "git pull && npm run build && npm run migrate && npm run restart",
+    "security:scan": "./scripts/security-scan.sh",
+    "performance:test": "./scripts/performance-test.sh",
+    "load:test": "./scripts/load-test.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.3",
+    "prettier": "^3.0.3",
+    "rimraf": "^5.0.1"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm run test"
+    }
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,jsx,ts,tsx}": [
+      "cd frontend && npm run lint:fix",
+      "cd frontend && npm run format"
+    ],
+    "backend/**/*.py": [
+      "cd backend && black",
+      "cd backend && isort",
+      "cd backend && flake8"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "config": {
+    "project_name": "Enterprise SQL Proxy System",
+    "version": "2.0.0",
+    "author": "Teeksss",
+    "created": "2025-05-29",
+    "environment": "production",
+    "components": {
+      "frontend": "React 18 + TypeScript",
+      "backend": "FastAPI + Python 3.11",
+      "database": "PostgreSQL 15",
+      "cache": "Redis 7",
+      "monitoring": "Prometheus + Grafana",
+      "web_server": "Nginx",
+      "containerization": "Docker + Docker Compose"
+    },
+    "features": {
+      "authentication": "JWT + LDAP",
+      "authorization": "Role-based access control",
+      "sql_proxy": "Multi-database support",
+      "query_approval": "Risk-based approval workflow",
+      "audit_logging": "Comprehensive activity tracking",
+      "monitoring": "Real-time metrics and alerting",
+      "security": "Enterprise-grade security features",
+      "compliance": "GDPR and SOX ready",
+      "scalability": "Horizontal scaling support",
+      "backup": "Automated backup and encryption"
+    },
+    "deployment": {
+      "development": "docker-compose up -d",
+      "production": "docker-compose -f docker-compose.prod.yml up -d",
+      "testing": "npm run test",
+      "validation": "./scripts/validate-system.sh"
+    }
+  },
+  "private": true,
+  "funding": {
+    "type": "enterprise",
+    "url": "https://enterprise-sql-proxy.com/pricing"
+  }
+}
